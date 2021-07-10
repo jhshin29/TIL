@@ -1,6 +1,4 @@
-#SQL 복습문제 2
-
-##단일행 함수  
+## 단일행 함수
 
 ```sql
 --문제3-1. 이름을 출력하는데 대문자로도 출력하고 소문자로도 출력하고 첫번째 철자는 대문자
@@ -11,7 +9,7 @@ from emp;
 --검색되게하시오!
 select ename, sal
 from emp
-where ename = upper('&name');
+where lower(ename) = 'king';
 --문제3-3. 이름의 첫글자가 S 로 시작하는 사원의 이름을 출력 하는데 LIKE 사용하지 말고
 --substr 함수로 수행하시오!
 select ename
@@ -27,9 +25,9 @@ select ename
 from emp
 where substr(ename, length(ename),1) = 'T';
 --문제3-6. 이름의 시작 철자가 AL 로 시작하는 사원들의 이름을 출력하시오 !
-select ename
-from emp
-where substr(ename, length(ename),1) = 'T';
+SELECT ename
+FROM emp
+WHERE substr(ename,1,2) ='AL';
 --문제3-7. 이름의 끝철자가 MS 로 끝나는 사원들의 이름을 출력하시오 !
 select ename
 from emp
@@ -147,5 +145,130 @@ select ename, sal, job
     , (case when (job = 'SALESMAN' and sal >= 1000) then 9000
             when (job = 'ANALYST' and sal >= 2500) then 8000
             else 0 end) bonus
+from emp;
+```
+
+## 복수행 함수 (=group 함수)
+
+```sql
+--문제4-1. 사원 테이블에서 최대월급을 출력하시오 !
+select max(sal)
+from emp;
+--문제4-2. 직무가 SALESMAN 인 사원들 중에서 최대월급을 출력하시오
+select max(sal)
+from emp
+where job = 'SALESMAN';
+--문제4-3. 부서번호, 부서번호별 최대월급을 출력하는데 부서번호별 최대월급이 높은것 부터
+--출력하시오 !
+select deptno, max(sal)
+from emp
+group by deptno
+order by max(sal) desc;
+--문제4-4. 위의 결과에서 부서번호 20번은 제외하고 출력하시오 !
+select deptno, max(sal)
+from emp
+where deptno <> 20
+group by deptno
+order by max(sal) desc;
+--문제4-5. 커미션의 평균값을 출력하시오 !
+select avg(comm)
+from emp;
+--문제4-6. 위의 결과를 다시 출력하는데 전체 사원수로 나누게 하시오 !
+select sum(comm)/count(nvl(comm,0))
+from emp;
+--문제4-7. 직무, 직무별 토탈월급을 출력하는데 직무가 SALESMAN 인 사원들을 제외하고 출력하
+--고 직무별 토탈월급이 높은것부터 출력하는데 직무별 토탈월급을 출력할때에 천단위
+--를 부여해서 출력하시오 ~
+select job, to_char(sum(sal),'999,999') sum_sal
+from emp
+where job != 'SALESMAN'
+group by job
+order by sum(sal) desc;
+--문제4-8. 부서번호, 부서번호별 토탈월급을 출력하시오 !
+--DEPTNO SUM(SAL)
+------------ ----------
+--30 9400
+--20 10875
+--10 8750
+select deptno, sum(sal)
+from emp
+group by deptno;
+--문제4-9. 위의 결과를 가로로 출력하시오 ! (부서번호를 모두 안다고 가정)
+--10 20 30
+------------ ---------- ----------
+--8750 10875 9400
+select
+    sum(decode(deptno, 10, sal)) as "10"
+    , sum(decode(deptno, 20, sal)) as "20"
+    , sum(decode(deptno, 30, sal)) as "30"
+from emp;
+--문제4-10. 직무, 직무별 토탈월급을 출력하시오 !
+select job, sum(sal)
+from emp
+group by job;
+--문제4-11. 위의 결과를 다시 출력하는데 직무별 토탈월급이
+--5000 이상인것만 출력하시오 !
+select job, sum(sal)
+from emp
+group by job
+having sum(sal) >= 5000;
+--문제4-12. 직무, 직무별 토탈월급을 출력하는데 직무가 SALESMAN 은 제외하고 출력하고 직무
+--별 토탈월급이 4000 이상인것만 출력하고 직무별 토탈월급이 높은것부터 출력하시오 ~
+select job, sum(sal) sum_sal
+from emp
+where job != 'SALESMAN'
+group by job
+having sum(sal) >= 4000
+order by sum_sal desc;
+--문제4-13. 사원 테이블의 전체 건수를 확인하시오 !
+select count(*)
+from emp;
+--문제4-14. 직무, 직무별 인원수를 출력하시오 !
+select job, count(job)
+from emp
+group by job;
+--문제4-15. 직무, 직무별 평균월급을 출력하시오 !
+select job, round(avg(sal))
+from emp
+group by job;
+--문제4-16. 위의 결과중에 최대값을 출력하시오 !
+select max(round(avg(sal)))
+from emp
+group by job;
+--문제4-17. 직무, 부서번호, 직무별 부서번호별 토탈월급을
+--출력하시오 !
+--JOB 10 20 30
+-------------------- ---------- ---------- ----------
+--CLERK 1300 1900 950
+--SALESMAN 5600
+--PRESIDENT 5000
+--MANAGER 2450 2975 2850
+--ANALYST 6000
+select job
+    , sum(decode(deptno, 10, sal)) as "10"
+    , sum(decode(deptno, 20, sal)) as "20"
+    , sum(decode(deptno, 30, sal)) as "30"
+from emp
+group by job;
+--문제4-18. 입사한 년도(4자리), 입사한 년도별 토탈월급을
+--출력하시오 !
+--TO_C SUM(SAL)
+------ ----------
+--1980 800
+--1983 1100
+--1982 4300
+--1981 22825
+select to_char(hiredate, 'RRRR'), sum(sal)
+from emp
+group by to_char(hiredate, 'RRRR');
+--문제4-19. 위의 결과를 가로로 출력하시오 !
+--1980 1981 1982 1983
+------------ ---------- ---------- ----------
+--800 22825 4300 1100
+select
+    sum(decode(to_char(hiredate, 'RRRR'), '1980', sal)) as "1980"
+    , sum(decode(to_char(hiredate, 'RRRR'), '1981', sal)) as "1981"
+    , sum(decode(to_char(hiredate, 'RRRR'), '1982', sal)) as "1982"
+    , sum(decode(to_char(hiredate, 'RRRR'), '1983', sal)) as "1983"
 from emp;
 ```
